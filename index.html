@@ -62,14 +62,18 @@
   .count { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 4.5ch; text-align: right; }
 
   /* ===== Datos de la jornada ===== */
-  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 8px; }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0 8px; }
+  .meta > div { min-width: 0; }
   .meta label { font-size: .85rem; color: var(--muted); display: block; margin-bottom: 4px; }
   .meta input {
-    width: 100%; font: inherit; font-size: 1rem; color: var(--ink);
+    width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; font: inherit; font-size: 1rem; color: var(--ink);
     background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
     padding: 10px 12px;
   }
   .meta .full { grid-column: 1 / -1; }
+  @media (max-width: 480px) {
+    .meta { grid-template-columns: 1fr; gap: 12px; }
+  }
 
   /* ===== Etapas ===== */
   .stage { margin-top: 26px; }
