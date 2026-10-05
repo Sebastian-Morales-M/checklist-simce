@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checklist ADA Simce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Tokens de color (claro / oscuro) ===== */
+  :root {
+    --bg: #E9EEF2;
+    --surface: #FFFFFF;
+    --ink: #1B2836;
+    --muted: #5B6B7B;
+    --line: #D3DCE4;
+    --primary: #1F4E79;
+    --done: #2E7A57;
+    --done-soft: #E2F1EA;
+    --alert: #A8261D;
+    --alert-soft: #FBE9E7;
+    --radius-lg: 18px;
+    --radius-sm: 10px;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101820; --surface: #182330; --ink: #E6EDF3; --muted: #93A3B3;
+      --line: #2A3847; --primary: #7FB3E6; --done: #5CC08E; --done-soft: #1C3328;
+      --alert: #F08A80; --alert-soft: #3A1E1C;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101820; --surface: #182330; --ink: #E6EDF3; --muted: #93A3B3;
+    --line: #2A3847; --primary: #7FB3E6; --done: #5CC08E; --done-soft: #1C3328;
+    --alert: #F08A80; --alert-soft: #3A1E1C;
+  }
+  html { height: 100%; scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 90px); }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0; min-height: 100%;
+    background: var(--bg); color: var(--ink);
+    font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 17px; line-height: 1.45;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px 120px; }
+
+  /* ===== Barra de progreso fija arriba ===== */
+  .topbar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+    background: var(--bg); padding: 14px 0 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.01em; }
+  .progress-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .bar { flex: 1; height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; width: 0; background: var(--done); transition: width .25s ease; }
+  .count { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 4.5ch; text-align: right; }
+
+  /* ===== Datos de la jornada ===== */
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 8px; }
+  .meta label { font-size: .85rem; color: var(--muted); display: block; margin-bottom: 4px; }
+  .meta input {
+    width: 100%; font: inherit; font-size: 1rem; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+  .meta .full { grid-column: 1 / -1; }
+
+  /* ===== Etapas ===== */
+  .stage { margin-top: 26px; }
+  .stage-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .stage-num {
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 700; font-size: .95rem;
+    background: var(--primary); color: var(--surface);
+    transform: translateY(5px);
+  }
+  .stage.complete .stage-num { background: var(--done); }
+  .stage-title { margin: 0; font-size: 1.1rem; }
+  .stage-time { color: var(--muted); font-size: .9rem; }
+
+  .items { list-style: none; margin: 0; padding: 0; background: var(--surface);
+           border-radius: var(--radius-lg); border: 1px solid var(--line); overflow: hidden; }
+  .item { display: flex; align-items: center; border-top: 1px solid var(--line); }
+  .item:first-child { border-top: none; }
+  .item label {
+    flex: 1; display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 16px; cursor: pointer; min-height: 56px;
+  }
+  .item input { position: absolute; opacity: 0; pointer-events: none; }
+  .box {
+    flex: none; width: 26px; height: 26px; margin-top: 1px;
+    border: 2px solid var(--muted); border-radius: 7px;
+    display: grid; place-items: center; transition: background .15s, border-color .15s;
+  }
+  .box svg { width: 16px; height: 16px; opacity: 0; transition: opacity .15s; }
+  .item input:checked + .box { background: var(--done); border-color: var(--done); }
+  .item input:checked + .box svg { opacity: 1; }
+  .item input:checked ~ .text { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .item input:focus-visible + .box { outline: 3px solid var(--primary); outline-offset: 2px; }
+  .del {
+    flex: none; background: none; border: none; color: var(--muted);
+    font-size: 1.4rem; padding: 0 16px; min-height: 56px; cursor: pointer;
+  }
+  .add-row { display: flex; gap: 8px; margin-top: 8px; }
+  .add-row input {
+    flex: 1; font: inherit; font-size: .95rem; color: var(--ink);
+    background: transparent; border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 9px 12px;
+  }
+  .add-row button { font: inherit; font-size: .95rem; border: none; border-radius: var(--radius-sm);
+                    background: var(--line); color: var(--ink); padding: 0 14px; cursor: pointer; }
+
+  /* ===== Restricciones (no se marcan, siempre visibles) ===== */
+  .rules { margin-top: 14px; background: var(--alert-soft); border-left: 5px solid var(--alert);
+           border-radius: var(--radius-sm); padding: 12px 16px; }
+  .rules strong { color: var(--alert); display: block; margin-bottom: 4px; }
+  .rules ul { margin: 0; padding-left: 20px; }
+  .rules li { margin: 4px 0; }
+
+  /* ===== Botones de acción ===== */
+  .actions { display: grid; gap: 10px; margin-top: 30px; }
+  .btn { font: inherit; font-weight: 700; font-size: 1.05rem; border-radius: 14px; padding: 15px;
+         border: none; cursor: pointer; }
+  .btn-main { background: var(--primary); color: var(--surface); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); font-weight: 400; }
+
+  /* ===== Historial ===== */
+  .history { margin-top: 34px; }
+  .history h2 { font-size: 1.1rem; margin: 0 0 10px; }
+  .history ul { list-style: none; margin: 0; padding: 0; }
+  .history li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+                padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 10px; }
+  .history .h-sub { color: var(--muted); font-size: .9rem; }
+  .history .h-pct { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .empty { color: var(--muted); font-size: .95rem; }
+
+  /* Aviso al completar todo */
+  .done-banner { display: none; margin-top: 16px; background: var(--done-soft); color: var(--done);
+                 border-radius: var(--radius-sm); padding: 12px 16px; font-weight: 700; }
+  .all-done .done-banner { display: block; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap" style="padding-bottom:0">
+    <h1>Checklist ADA Simce</h1>
+    <div class="progress-row">
+      <div class="bar" aria-hidden="true"><span id="bar"></span></div>
+      <div class="count" id="count">0/0</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="app">
+  <!-- Datos de la jornada actual -->
+  <div class="meta">
+    <div><label for="f-fecha">Fecha</label><input id="f-fecha" type="date"></div>
+    <div><label for="f-curso">Curso</label><input id="f-curso" placeholder="Ej: 4° básico A"></div>
+    <div class="full"><label for="f-colegio">Colegio</label><input id="f-colegio" placeholder="Nombre del establecimiento"></div>
+  </div>
+
+  <div class="done-banner">Jornada completa. Guárdala en el historial cuando termines.</div>
+
+  <div id="stages"></div>
+
+  <div class="actions">
+    <button class="btn btn-main" id="btn-save">Guardar jornada y empezar otra</button>
+    <button class="btn btn-ghost" id="btn-clear">Desmarcar todo sin guardar</button>
+  </div>
+
+  <section class="history">
+    <h2>Pruebas anteriores</h2>
+    <ul id="history"></ul>
+  </section>
+</main>
+
+<script>
+/* ===== Pasos base (tus notas) ===== */
+const BASE = [
+  { title: "Antes de salir", time: "antes de las 08:00", items: [
+    "Cédula de identidad vigente",
+    "Credencial oficial de ADA",
+    "Celular cargado y con datos móviles",
+    "Manual de aplicación ADA impreso",
+    "Llegar al colegio antes de las 08:00"
+  ]},
+  { title: "Llegada y coordinación", time: "08:00 a 08:30", items: [
+    "Presentarme con la dirección del colegio",
+    "Coordinar con el Examinador Regular",
+    "Reunirme con el Docente Colaborador (Educador/a Diferencial o Asistente PIE)",
+    "Confirmar que el docente colaborador quede fuera de la sala",
+    "Escanear QR de la caja-curso del día"
+  ]},
+  { title: "Antes de rendir", time: "ingreso a sala", items: [
+    "Revisar acomodaciones aprobadas en la app vs. Anexo I",
+    "Confirmar ubicación (1° fila o lugar asignado) e informarle al estudiante antes de entrar",
+    "Verificar materiales de apoyo / SAAC en el puesto",
+    "Anticipar verbalmente los pasos del proceso al estudiante"
+  ]},
+  { title: "Durante la prueba", time: "aplicación", items: [
+    "Escanear QR de la bolsa contenedora al inicio del módulo",
+    "Si se distrae: acercarme con calma y motivarlo a continuar",
+    "Si hay dudas abstractas: contextualizar con lenguaje corporal, sin dar la respuesta",
+    "Permitir Tiempo Fuera si lo necesita para autorregularse"
+  ], rules: [
+    "No resolver ni explicar ejercicios de matemática",
+    "No dar ni sugerir respuestas de ningún ítem",
+    "No aplicar acomodaciones no aprobadas",
+    "No asumir roles del examinador regular"
+  ]},
+  { title: "Cierre del día", time: "", items: [
+    "Despedirme de los estudiantes con NEEP y anticipar el día siguiente",
+    "Despedirme del Docente Colaborador y autoridades",
+    "Informar cualquier novedad al Supervisor Simce"
+  ]}
+];
+
+const KEY = "ada-simce-v1";
+
+/* Lectura y escritura segura del almacenamiento del navegador */
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+/* Estado: pasos extra que agregues, marcas actuales, datos de la jornada e historial */
+const state = Object.assign({ extra: {}, checked: {}, meta: {}, history: [] }, load());
+
+const today = () => new Date().toISOString().slice(0, 10);
+if (!state.meta.fecha) state.meta.fecha = today();
+
+/* Arma la lista completa de una etapa (base + agregados por ti) */
+function itemsOf(i) {
+  const base = BASE[i].items.map((t, j) => ({ id: `b${i}-${j}`, text: t, custom: false }));
+  const extra = (state.extra[i] || []).map(x => ({ id: x.id, text: x.text, custom: true }));
+  return base.concat(extra);
+}
+
+const checkSvg = '<svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* Dibuja todas las etapas */
+function render() {
+  const root = document.getElementById("stages");
+  root.innerHTML = BASE.map((st, i) => {
+    const list = itemsOf(i);
+    const allDone = list.length && list.every(it => state.checked[it.id]);
+    return `
+    <section class="stage ${allDone ? "complete" : ""}">
+      <div class="stage-head">
+        <span class="stage-num">${allDone ? "✓" : i + 1}</span>
+        <div>
+          <h2 class="stage-title">${st.title}</h2>
+          ${st.time ? `<div class="stage-time">${st.time}</div>` : ""}
+        </div>
+      </div>
+      <ul class="items">
+        ${list.map(it => `
+          <li class="item">
+            <label>
+              <input type="checkbox" data-id="${it.id}" ${state.checked[it.id] ? "checked" : ""}>
+              <span class="box">${checkSvg}</span>
+              <span class="text">${esc(it.text)}</span>
+            </label>
+            ${it.custom ? `<button class="del" data-del="${i}|${it.id}" aria-label="Quitar paso">×</button>` : ""}
+          </li>`).join("")}
+      </ul>
+      <form class="add-row" data-stage="${i}">
+        <input placeholder="Agregar un paso" aria-label="Agregar un paso a ${st.title}">
+        <button type="submit">Agregar</button>
+      </form>
+      ${st.rules ? `<div class="rules"><strong>Nunca durante la prueba</strong><ul>${st.rules.map(r => `<li>${r}</li>`).join("")}</ul></div>` : ""}
+    </section>`;
+  }).join("");
+  updateProgress();
+  renderHistory();
+}
+
+/* Calcula el avance total */
+function progress() {
+  let total = 0, done = 0;
+  BASE.forEach((_, i) => itemsOf(i).forEach(it => { total++; if (state.checked[it.id]) done++; }));
+  return { total, done };
+}
+function updateProgress() {
+  const { total, done } = progress();
+  document.getElementById("count").textContent = `${done}/${total}`;
+  document.getElementById("bar").style.width = total ? (done / total * 100) + "%" : "0";
+  document.getElementById("app").classList.toggle("all-done", total > 0 && done === total);
+}
+
+/* Historial de jornadas guardadas */
+function renderHistory() {
+  const ul = document.getElementById("history");
+  if (!state.history.length) {
+    ul.innerHTML = '<li class="empty" style="background:none;border:none;padding:0">Aún no guardas ninguna jornada.</li>';
+    return;
+  }
+  ul.innerHTML = state.history.map(h => {
+    const f = h.fecha ? new Date(h.fecha + "T12:00").toLocaleDateString("es-CL", { weekday: "short", day: "numeric", month: "short" }) : "Sin fecha";
+    return `<li><div><div>${esc(h.colegio || "Colegio sin nombre")}</div>
+      <div class="h-sub">${f}${h.curso ? ", " + esc(h.curso) : ""}</div></div>
+      <div class="h-pct">${h.done}/${h.total}</div></li>`;
+  }).join("");
+}
+
+/* ===== Eventos ===== */
+document.addEventListener("change", e => {
+  const id = e.target.dataset && e.target.dataset.id;
+  if (!id) return;
+  state.checked[id] = e.target.checked;
+  save();
+  // Redibuja para actualizar el estado de la etapa completa
+  render();
+});
+
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  const i = e.target.dataset.stage;
+  const input = e.target.querySelector("input");
+  const text = input.value.trim();
+  if (!text) return;
+  (state.extra[i] = state.extra[i] || []).push({ id: "c" + Date.now(), text });
+  save(); render();
+});
+
+document.addEventListener("click", e => {
+  const d = e.target.dataset && e.target.dataset.del;
+  if (!d) return;
+  const [i, id] = d.split("|");
+  state.extra[i] = (state.extra[i] || []).filter(x => x.id !== id);
+  delete state.checked[id];
+  save(); render();
+});
+
+/* Datos de la jornada: se guardan al escribir */
+["fecha", "curso", "colegio"].forEach(k => {
+  const el = document.getElementById("f-" + k);
+  el.value = state.meta[k] || "";
+  el.addEventListener("input", () => { state.meta[k] = el.value; save(); });
+});
+
+/* Guarda la jornada en el historial y deja todo listo para la siguiente */
+document.getElementById("btn-save").addEventListener("click", () => {
+  const { total, done } = progress();
+  if (done === 0 && !confirm("No has marcado ningún paso. ¿Guardar igual?")) return;
+  state.history.unshift({ ...state.meta, done, total });
+  state.checked = {};
+  state.meta = { fecha: today() };
+  ["fecha", "curso", "colegio"].forEach(k => document.getElementById("f-" + k).value = state.meta[k] || "");
+  save(); render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+document.getElementById("btn-clear").addEventListener("click", () => {
+  if (!confirm("¿Desmarcar todos los pasos? La jornada no se guarda en el historial.")) return;
+  state.checked = {};
+  save(); render();
+});
+
+render();
+</script>
+</body>
+</html>
